@@ -3,13 +3,17 @@
 namespace TheNetworg\OAuth2\Client\Provider;
 
 use Firebase\JWT\JWT;
-use League\OAuth2\Client\Grant\AbstractGrant;
-use League\OAuth2\Client\Provider\AbstractProvider;
-use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
-use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
+use phpseclib3\Crypt\RSA;
+use phpseclib3\Math\BigInteger;
+use phpseclib3\Crypt\RSA\PublicKey;
+use phpseclib3\Crypt\PublicKeyLoader;
 use Psr\Http\Message\ResponseInterface;
+use League\OAuth2\Client\Grant\AbstractGrant;
 use TheNetworg\OAuth2\Client\Grant\JwtBearer;
 use TheNetworg\OAuth2\Client\Token\AccessToken;
+use League\OAuth2\Client\Provider\AbstractProvider;
+use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
 class Azure extends AbstractProvider
 {
@@ -308,6 +312,18 @@ class Azure extends AbstractProvider
         }
     }
 
+    private function generatePublicKeyFromModulusAndExponent(string $modulus, string $exponent): string
+    {
+        return PublicKeyLoader::load(['n' => new BigInteger($this->base64_url_decode($modulus), 256), 'e' => new BigInteger($this->base64_url_decode($exponent), 256)]);
+    }
+
+    private function base64_url_decode(string $data): string
+    {
+        $base64data = strtr($data, '-_', '+/');
+
+        return base64_decode($base64data);
+    }
+
     /**
      * Get JWT verification keys from Azure Active Directory.
      *
@@ -354,6 +370,10 @@ class Azure extends AbstractProvider
 
                     $keys[$keyinfo['kid']] = $publicKey;
                 }
+            } else {
+                $key = $this->generatePublicKeyFromModulusAndExponent($keyinfo['n'], $keyinfo['e']);
+
+                $keys[$keyinfo['kid']] = $key;
             }
         }
 
