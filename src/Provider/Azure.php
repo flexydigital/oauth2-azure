@@ -87,6 +87,7 @@ class Azure extends AbstractProvider
     public function getBaseAuthorizationUrl()
     {
         $openIdConfiguration = $this->getOpenIdConfiguration($this->tenant, $this->defaultEndPointVersion);
+        
         $authorizationEndpoint = is_array($openIdConfiguration) && array_key_exists('authorization_endpoint', $openIdConfiguration)
             ? $openIdConfiguration['authorization_endpoint']
             : null;
